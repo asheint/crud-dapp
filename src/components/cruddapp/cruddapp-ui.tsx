@@ -1,22 +1,40 @@
 'use client'
 
 import { Keypair, PublicKey } from '@solana/web3.js'
-import { useMemo } from 'react'
 import { ellipsify } from '../ui/ui-layout'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCruddappProgram, useCruddappProgramAccount } from './cruddapp-data-access'
+import { useMemo, useState } from 'react'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export function CruddappCreate() {
-  const { initialize } = useCruddappProgram()
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const { createEntry } = useCruddappProgram();
+  const { publicKey } = useWallet();
+
+  const isFormValid = title.trim() !== '' && message.trim() !== '';
+
+  const handleSubmit = () => {
+    if (publicKey && isFormValid) {
+      createEntry.mutateAsync({ title, message, owner: publicKey });
+    }
+  };
+
+  if (!publicKey) {
+    return <p> Connect Your Wallet. </p>
+  }
 
   return (
-    <button
-      className="btn btn-xs lg:btn-md btn-primary"
-      onClick={() => initialize.mutateAsync(Keypair.generate())}
-      disabled={initialize.isPending}
-    >
-      Create {initialize.isPending && '...'}
-    </button>
+    <div>
+      <input
+        type="text"
+        className="input input-bordered w-full max-w-xs"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+    </div>
   )
 }
 
