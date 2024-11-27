@@ -34,6 +34,12 @@ export function CruddappCreate() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
+      <textarea
+        className="textarea textarea-bordered w-full max-w-xs"
+        placeholder="Message"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
     </div>
   )
 }
