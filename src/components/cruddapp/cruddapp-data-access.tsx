@@ -10,6 +10,7 @@ import {useCluster} from '../cluster/cluster-data-access'
 import {useAnchorProvider} from '../solana/solana-provider'
 import {useTransactionToast} from '../ui/ui-layout'
 import { sign } from 'crypto'
+import { title } from 'process'
 
 interface CreateEntryArgs {
   title: string;
@@ -27,7 +28,7 @@ export function useCruddappProgram() {
 
   const accounts = useQuery({
     queryKey: ['cruddapp', 'all', { cluster }],
-    queryFn: () => program.account.cruddapp.all(),
+    queryFn: () => program.account.journalEntryState.all(),
   })
 
   const getProgramAccount = useQuery({
@@ -64,52 +65,37 @@ export function useCruddappProgramAccount({ account }: { account: PublicKey }) {
 
   const accountQuery = useQuery({
     queryKey: ['cruddapp', 'fetch', { cluster, account }],
-    queryFn: () => program.account.cruddapp.fetch(account),
+    queryFn: () => program.account.journalEntryState.fetch(account),
   })
 
-  const closeMutation = useMutation({
-    mutationKey: ['cruddapp', 'close', { cluster, account }],
-    mutationFn: () => program.methods.close().accounts({ cruddapp: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accounts.refetch()
+  const updateEntry = useMutation<string, Error, CreateEntryArgs>({
+    mutationKey: ['journalEntry', 'update', { cluster }],
+    mutationFn: async ({ title, message }) => {
+      return program.methods.updateJournalEntry(title, message).rpc();
     },
-  })
-
-  const decrementMutation = useMutation({
-    mutationKey: ['cruddapp', 'decrement', { cluster, account }],
-    mutationFn: () => program.methods.decrement().accounts({ cruddapp: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+    onSuccess: (signature) => {
+      transactionToast(signature)
+      accounts.refetch()
     },
-  })
+    onError: (error) => {
+      toast.error('Error updating journal entry: ' + error.message);
+    }
+  });
 
-  const incrementMutation = useMutation({
-    mutationKey: ['cruddapp', 'increment', { cluster, account }],
-    mutationFn: () => program.methods.increment().accounts({ cruddapp: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+  const deleteEntry = useMutation({
+    mutationKey: ['journalEntry', 'delete', { cluster }],
+    mutationFn: ( title: string ) => {
+      return program.methods.deleteJournalEntry(title).rpc();
     },
-  })
-
-  const setMutation = useMutation({
-    mutationKey: ['cruddapp', 'set', { cluster, account }],
-    mutationFn: (value: number) => program.methods.set(value).accounts({ cruddapp: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+    onSuccess: (signature) => {
+      transactionToast(signature)
+      accounts.refetch()
     },
-  })
-
-  const createEntry = useMutation<String, Error, CreateEntryArgs>
+  });
 
   return {
     accountQuery,
-    closeMutation,
-    decrementMutation,
-    incrementMutation,
-    setMutation,
+    updateEntry,
+    deleteEntry,
   }
 }
