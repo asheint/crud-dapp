@@ -9,6 +9,13 @@ import toast from 'react-hot-toast'
 import {useCluster} from '../cluster/cluster-data-access'
 import {useAnchorProvider} from '../solana/solana-provider'
 import {useTransactionToast} from '../ui/ui-layout'
+import { sign } from 'crypto'
+
+interface CreateEntryArgs {
+  title: string;
+  message: string;
+  owner: PublicKey;
+}
 
 export function useCruddappProgram() {
   const { connection } = useConnection()
@@ -28,23 +35,25 @@ export function useCruddappProgram() {
     queryFn: () => connection.getParsedAccountInfo(programId),
   })
 
-  const initialize = useMutation({
-    mutationKey: ['cruddapp', 'initialize', { cluster }],
-    mutationFn: (keypair: Keypair) =>
-      program.methods.initialize().accounts({ cruddapp: keypair.publicKey }).signers([keypair]).rpc(),
+  const createEntry = useMutation<string, Error, CreateEntryArgs>({
+    mutationKey: ['journalEntry', 'create', { cluster }],
+    mutationFn: async ({ title, message, owner }) => {
+      return program.methods.createJournalEntry(title, message).rpc();
+    },
     onSuccess: (signature) => {
       transactionToast(signature)
-      return accounts.refetch()
+      accounts.refetch()
     },
-    onError: () => toast.error('Failed to initialize account'),
-  })
+    onError: (error) => {
+      toast.error('Error creating journal entry: ' + error.message);
+    }
+  });
 
   return {
     program,
-    programId,
     accounts,
     getProgramAccount,
-    initialize,
+    createEntry,
   }
 }
 
@@ -93,6 +102,8 @@ export function useCruddappProgramAccount({ account }: { account: PublicKey }) {
       return accountQuery.refetch()
     },
   })
+
+  const createEntry = useMutation<String, Error, CreateEntryArgs>
 
   return {
     accountQuery,
