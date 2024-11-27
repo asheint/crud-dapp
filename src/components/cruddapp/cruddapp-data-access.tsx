@@ -52,6 +52,7 @@ export function useCruddappProgram() {
 
   return {
     program,
+    programId,
     accounts,
     getProgramAccount,
     createEntry,
