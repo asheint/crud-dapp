@@ -16,7 +16,7 @@ pub mod cruddapp {
         Ok(())
     }
 
-    pub fn update_journal_entry(ctx: Contex<UpdateEntry>, title: String, message: String) -> Result<()> {
+    pub fn update_journal_entry(ctx: Contex<UpdateEntry>, _title: String, message: String) -> Result<()> {
         let journal_entry: &mut ctx.account.journal_entry;
         journal_entry.message = message;
         Ok(())
